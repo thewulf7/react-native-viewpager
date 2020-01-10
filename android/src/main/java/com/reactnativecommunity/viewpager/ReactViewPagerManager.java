@@ -7,15 +7,15 @@
 
 package com.reactnativecommunity.viewpager;
 
-import android.graphics.Color;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
 
 import com.facebook.infer.annotation.Assertions;
@@ -27,15 +27,16 @@ import com.facebook.react.uimanager.UIManagerModule;
 import com.facebook.react.uimanager.ViewGroupManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.EventDispatcher;
-import com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2;
+import com.reactnativecommunity.viewpager.event.PageScrollEvent;
+import com.reactnativecommunity.viewpager.event.PageScrollStateChangedEvent;
+import com.reactnativecommunity.viewpager.event.PageSelectedEvent;
 
 import java.util.Map;
 
-import static com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2.ORIENTATION_HORIZONTAL;
-import static com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2.SCROLL_STATE_DRAGGING;
-import static com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2.SCROLL_STATE_IDLE;
-import static com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2.SCROLL_STATE_SETTLING;
-
+import static androidx.viewpager2.widget.ViewPager2.ORIENTATION_HORIZONTAL;
+import static androidx.viewpager2.widget.ViewPager2.SCROLL_STATE_IDLE;
+import static androidx.viewpager2.widget.ViewPager2.SCROLL_STATE_DRAGGING;
+import static androidx.viewpager2.widget.ViewPager2.SCROLL_STATE_SETTLING;
 
 public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
 
@@ -43,6 +44,7 @@ public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
     private static final int COMMAND_SET_PAGE = 1;
     private static final int COMMAND_SET_PAGE_WITHOUT_ANIMATION = 2;
     private EventDispatcher eventDispatcher;
+    static SparseArray<View> reactChildrenViews = new SparseArray<>();
 
     @NonNull
     @Override
@@ -54,9 +56,8 @@ public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
     @Override
     protected ViewPager2 createViewInstance(@NonNull ThemedReactContext reactContext) {
         final ViewPager2 vp = new ViewPager2(reactContext);
-        ReactPageAdapter adapter = new ReactPageAdapter();
-        adapter.setHasStableIds(true);
-        vp.setAdapter(new ReactPageAdapter());
+        FragmentAdapter adapter = new FragmentAdapter((FragmentActivity) reactContext.getCurrentActivity());
+        vp.setAdapter(adapter);
         vp.setOrientation(ORIENTATION_HORIZONTAL);
         eventDispatcher = reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
         vp.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
@@ -100,10 +101,11 @@ public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
 
     @Override
     public void addView(ViewPager2 parent, View child, int index) {
-        if(child == null) {
+        if (child == null) {
             return;
         }
-        ((ReactPageAdapter)parent.getAdapter()).addChild(child,index);
+        reactChildrenViews.put(child.getId(), child);
+        ((FragmentAdapter) parent.getAdapter()).addFragment(child, index);
     }
 
     @Override
@@ -114,7 +116,15 @@ public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
 
     @Override
     public View getChildAt(ViewPager2 parent, int index) {
-        return ((ReactPageAdapter)parent.getAdapter()).getChildAt(index);
+        return ((FragmentAdapter) parent.getAdapter()).getChildAt(index);
+    }
+
+    @Override
+    public void removeView(ViewPager2 parent, View view) {
+        reactChildrenViews.remove(view.getId());
+        ((FragmentAdapter) parent.getAdapter()).removeFragment(view);
+        super.removeView(parent, view);
+
     }
 
     @Override
@@ -130,7 +140,7 @@ public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
 
     @ReactProp(name = "orientation")
     public void setOrientation(ViewPager2 viewPager, String value) {
-        viewPager.setOrientation(value.equals("horizontal") ? ViewPager2.ORIENTATION_HORIZONTAL : ViewPager2.ORIENTATION_VERTICAL);
+        viewPager.setOrientation(value.equals("horizontal") ? ORIENTATION_HORIZONTAL : ViewPager2.ORIENTATION_VERTICAL);
     }
 
 
@@ -160,12 +170,28 @@ public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
         switch (commandId) {
             case COMMAND_SET_PAGE: {
                 root.setCurrentItem(args.getInt(0), true);
+                eventDispatcher.dispatchEvent(new PageSelectedEvent(root.getId(), args.getInt(0)));
                 return;
 
             }
             case COMMAND_SET_PAGE_WITHOUT_ANIMATION: {
                 // there is a bug here
+//                if (root.getAdapter() != null) {
+//                    root.setCurrentItem(args.getInt(0),false);
+//                    RecyclerView.Adapter oldAdapter = root.getAdapter();
+//                    root.setAdapter(null);
+//                    root.setAdapter(oldAdapter);
+//                    root.getAdapter().notifyDataSetChanged();
+//                    root.requestLayout();
+////                    root.layout(root.getLeft(), root.getTop(), root.getRight(), root.getBottom());
+//                    eventDispatcher.dispatchEvent(new PageSelectedEvent(root.getId(), args.getInt(0)));
+//                } else {
+//                    root.setCurrentItem(args.getInt(0), false);
+//                    eventDispatcher.dispatchEvent(new PageSelectedEvent(root.getId(), args.getInt(0)));
+//                }
+
                 root.setCurrentItem(args.getInt(0), false);
+//                root.mRecyclerView.scrollToPosition();
                 eventDispatcher.dispatchEvent(new PageSelectedEvent(root.getId(), args.getInt(0)));
                 return;
             }
@@ -180,8 +206,8 @@ public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
 
     @ReactProp(name = "pageMargin", defaultFloat = 0)
     public void setPageMargin(ViewPager2 pager, float margin) {
-        int pageMargin = (int)PixelUtil.toPixelFromDIP(margin);
-        pager.setPadding(pageMargin,pageMargin,pageMargin,pageMargin);
+        int pageMargin = (int) PixelUtil.toPixelFromDIP(margin);
+        pager.setPadding(pageMargin, pageMargin, pageMargin, pageMargin);
     }
 
 }
