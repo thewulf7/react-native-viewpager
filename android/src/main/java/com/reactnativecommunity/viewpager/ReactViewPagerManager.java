@@ -14,8 +14,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import androidx.fragment.app.FragmentActivity;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager2.widget.ViewPager2;
 
 
 import com.facebook.infer.annotation.Assertions;
@@ -24,19 +22,22 @@ import com.facebook.react.common.MapBuilder;
 import com.facebook.react.uimanager.PixelUtil;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.UIManagerModule;
+
 import com.facebook.react.uimanager.ViewGroupManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.EventDispatcher;
 import com.reactnativecommunity.viewpager.event.PageScrollEvent;
 import com.reactnativecommunity.viewpager.event.PageScrollStateChangedEvent;
 import com.reactnativecommunity.viewpager.event.PageSelectedEvent;
+import com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2;
 
 import java.util.Map;
 
-import static androidx.viewpager2.widget.ViewPager2.ORIENTATION_HORIZONTAL;
-import static androidx.viewpager2.widget.ViewPager2.SCROLL_STATE_IDLE;
-import static androidx.viewpager2.widget.ViewPager2.SCROLL_STATE_DRAGGING;
-import static androidx.viewpager2.widget.ViewPager2.SCROLL_STATE_SETTLING;
+import static com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2.ORIENTATION_HORIZONTAL;
+import static com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2.SCROLL_STATE_DRAGGING;
+import static com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2.SCROLL_STATE_IDLE;
+import static com.reactnativecommunity.viewpager.viewpager2.widget.ViewPager2.SCROLL_STATE_SETTLING;
+
 
 public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
 
@@ -175,23 +176,7 @@ public class ReactViewPagerManager extends ViewGroupManager<ViewPager2> {
 
             }
             case COMMAND_SET_PAGE_WITHOUT_ANIMATION: {
-                // there is a bug here
-//                if (root.getAdapter() != null) {
-//                    root.setCurrentItem(args.getInt(0),false);
-//                    RecyclerView.Adapter oldAdapter = root.getAdapter();
-//                    root.setAdapter(null);
-//                    root.setAdapter(oldAdapter);
-//                    root.getAdapter().notifyDataSetChanged();
-//                    root.requestLayout();
-////                    root.layout(root.getLeft(), root.getTop(), root.getRight(), root.getBottom());
-//                    eventDispatcher.dispatchEvent(new PageSelectedEvent(root.getId(), args.getInt(0)));
-//                } else {
-//                    root.setCurrentItem(args.getInt(0), false);
-//                    eventDispatcher.dispatchEvent(new PageSelectedEvent(root.getId(), args.getInt(0)));
-//                }
-
                 root.setCurrentItem(args.getInt(0), false);
-//                root.mRecyclerView.scrollToPosition();
                 eventDispatcher.dispatchEvent(new PageSelectedEvent(root.getId(), args.getInt(0)));
                 return;
             }

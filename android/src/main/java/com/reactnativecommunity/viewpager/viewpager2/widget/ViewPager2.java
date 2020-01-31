@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package androidx.viewpager2.widget;
+package com.reactnativecommunity.viewpager.viewpager2.widget;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP_PREFIX;
 import static androidx.recyclerview.widget.RecyclerView.NO_POSITION;
@@ -54,8 +54,11 @@ import androidx.recyclerview.widget.PagerSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.RecyclerView.Adapter;
 import androidx.recyclerview.widget.RecyclerView.ItemDecoration;
-import androidx.viewpager2.R;
-import androidx.viewpager2.adapter.StatefulAdapter;
+
+
+import com.reactnativecommunity.viewpager.R;
+import com.reactnativecommunity.viewpager.viewpager2.adapter.FragmentStateAdapter;
+import com.reactnativecommunity.viewpager.viewpager2.adapter.StatefulAdapter;
 
 import java.lang.annotation.Retention;
 
@@ -66,7 +69,7 @@ import java.lang.annotation.Retention;
  *
  * @see androidx.viewpager.widget.ViewPager
  */
-public final class ViewPager2 extends ViewGroup {
+public class ViewPager2 extends ViewGroup {
     /** @hide */
     @RestrictTo(LIBRARY_GROUP_PREFIX)
     @Retention(SOURCE)
@@ -291,7 +294,7 @@ public final class ViewPager2 extends ViewGroup {
     private void setOrientation(Context context, AttributeSet attrs) {
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ViewPager2);
         if (Build.VERSION.SDK_INT >= 29) {
-            saveAttributeDataForStyleable(context, R.styleable.ViewPager2, attrs, a, 0, 0);
+            //saveAttributeDataForStyleable(context, R.styleable.ViewPager2, attrs, a, 0, 0);
         }
         try {
             setOrientation(
@@ -433,7 +436,7 @@ public final class ViewPager2 extends ViewGroup {
      * <p>Set a new adapter to provide page views on demand.</p>
      *
      * <p>If you're planning to use {@link androidx.fragment.app.Fragment Fragments} as pages,
-     * implement {@link androidx.viewpager2.adapter.FragmentStateAdapter FragmentStateAdapter}. If
+     * implement {@link FragmentStateAdapter FragmentStateAdapter}. If
      * your pages are Views, implement {@link RecyclerView.Adapter} as usual.</p>
      *
      * <p>If your pages contain LayoutTransitions, then those LayoutTransitions <em>must</em> have
@@ -451,7 +454,7 @@ public final class ViewPager2 extends ViewGroup {
      * </pre>
      *
      * @param adapter The adapter to use, or {@code null} to remove the current adapter
-     * @see androidx.viewpager2.adapter.FragmentStateAdapter
+     * @see FragmentStateAdapter
      * @see RecyclerView#setAdapter(Adapter)
      */
     public void setAdapter(@Nullable @SuppressWarnings("rawtypes") Adapter adapter) {
@@ -968,6 +971,27 @@ public final class ViewPager2 extends ViewGroup {
             super(context);
         }
 
+        protected boolean mRequestedLayout = false;
+
+        @Override
+        public void requestLayout() {
+            super.requestLayout();
+            // We need to intercept this method because if we don't our children will never update
+            // Check https://stackoverflow.com/questions/49371866/recyclerview-wont-update-child-until-i-scroll
+            if (!mRequestedLayout) {
+                mRequestedLayout = true;
+                this.post(new Runnable() {
+                    @SuppressLint("WrongCall")
+                    @Override
+                    public void run() {
+                        mRequestedLayout = false;
+                        layout(getLeft(), getTop(), getRight(), getBottom());
+                        onLayout(false, getLeft(), getTop(), getRight(), getBottom());
+                    }
+                });
+            }
+        }
+
         @RequiresApi(23)
         @Override
         public CharSequence getAccessibilityClassName() {
@@ -995,7 +1019,6 @@ public final class ViewPager2 extends ViewGroup {
         public boolean onInterceptTouchEvent(MotionEvent ev) {
             return isUserInputEnabled() && super.onInterceptTouchEvent(ev);
         }
-
     }
 
     private class LinearLayoutManagerImpl extends LinearLayoutManager {
@@ -1476,62 +1499,62 @@ public final class ViewPager2 extends ViewGroup {
          * response to page, adapter, and orientation changes. Compatible with API >= 21.
          */
         void updatePageAccessibilityActions() {
-            ViewPager2 viewPager = ViewPager2.this;
-
-            @SuppressLint("InlinedApi")
-            final int actionIdPageLeft = android.R.id.accessibilityActionPageLeft;
-            @SuppressLint("InlinedApi")
-            final int actionIdPageRight = android.R.id.accessibilityActionPageRight;
-            @SuppressLint("InlinedApi")
-            final int actionIdPageUp = android.R.id.accessibilityActionPageUp;
-            @SuppressLint("InlinedApi")
-            final int actionIdPageDown = android.R.id.accessibilityActionPageDown;
-
-            ViewCompat.removeAccessibilityAction(viewPager, actionIdPageLeft);
-            ViewCompat.removeAccessibilityAction(viewPager, actionIdPageRight);
-            ViewCompat.removeAccessibilityAction(viewPager, actionIdPageUp);
-            ViewCompat.removeAccessibilityAction(viewPager, actionIdPageDown);
-
-            if (getAdapter() == null) {
-                return;
-            }
-
-            int itemCount = getAdapter().getItemCount();
-            if (itemCount == 0) {
-                return;
-            }
-
-            if (!isUserInputEnabled()) {
-                return;
-            }
-
-            if (getOrientation() == ORIENTATION_HORIZONTAL) {
-                boolean isLayoutRtl = isRtl();
-                int actionIdPageForward = isLayoutRtl ? actionIdPageLeft : actionIdPageRight;
-                int actionIdPageBackward = isLayoutRtl ? actionIdPageRight : actionIdPageLeft;
-
-                if (mCurrentItem < itemCount - 1) {
-                    ViewCompat.replaceAccessibilityAction(viewPager,
-                            new AccessibilityActionCompat(actionIdPageForward, null), null,
-                            mActionPageForward);
-                }
-                if (mCurrentItem > 0) {
-                    ViewCompat.replaceAccessibilityAction(viewPager,
-                            new AccessibilityActionCompat(actionIdPageBackward, null), null,
-                            mActionPageBackward);
-                }
-            } else {
-                if (mCurrentItem < itemCount - 1) {
-                    ViewCompat.replaceAccessibilityAction(viewPager,
-                            new AccessibilityActionCompat(actionIdPageDown, null), null,
-                            mActionPageForward);
-                }
-                if (mCurrentItem > 0) {
-                    ViewCompat.replaceAccessibilityAction(viewPager,
-                            new AccessibilityActionCompat(actionIdPageUp, null), null,
-                            mActionPageBackward);
-                }
-            }
+//            ViewPager2 viewPager = ViewPager2.this;
+//
+//            @SuppressLint("InlinedApi")
+//            final int actionIdPageLeft = android.R.id.accessibilityActionPageLeft;
+//            @SuppressLint("InlinedApi")
+//            final int actionIdPageRight = android.R.id.accessibilityActionPageRight;
+//            @SuppressLint("InlinedApi")
+//            final int actionIdPageUp = android.R.id.accessibilityActionPageUp;
+//            @SuppressLint("InlinedApi")
+//            final int actionIdPageDown = android.R.id.accessibilityActionPageDown;
+//
+//            ViewCompat.removeAccessibilityAction(viewPager, actionIdPageLeft);
+//            ViewCompat.removeAccessibilityAction(viewPager, actionIdPageRight);
+//            ViewCompat.removeAccessibilityAction(viewPager, actionIdPageUp);
+//            ViewCompat.removeAccessibilityAction(viewPager, actionIdPageDown);
+//
+//            if (getAdapter() == null) {
+//                return;
+//            }
+//
+//            int itemCount = getAdapter().getItemCount();
+//            if (itemCount == 0) {
+//                return;
+//            }
+//
+//            if (!isUserInputEnabled()) {
+//                return;
+//            }
+//
+//            if (getOrientation() == ORIENTATION_HORIZONTAL) {
+//                boolean isLayoutRtl = isRtl();
+//                int actionIdPageForward = isLayoutRtl ? actionIdPageLeft : actionIdPageRight;
+//                int actionIdPageBackward = isLayoutRtl ? actionIdPageRight : actionIdPageLeft;
+//
+//                if (mCurrentItem < itemCount - 1) {
+//                    ViewCompat.replaceAccessibilityAction(viewPager,
+//                            new AccessibilityActionCompat(actionIdPageForward, null), null,
+//                            mActionPageForward);
+//                }
+//                if (mCurrentItem > 0) {
+//                    ViewCompat.replaceAccessibilityAction(viewPager,
+//                            new AccessibilityActionCompat(actionIdPageBackward, null), null,
+//                            mActionPageBackward);
+//                }
+//            } else {
+//                if (mCurrentItem < itemCount - 1) {
+//                    ViewCompat.replaceAccessibilityAction(viewPager,
+//                            new AccessibilityActionCompat(actionIdPageDown, null), null,
+//                            mActionPageForward);
+//                }
+//                if (mCurrentItem > 0) {
+//                    ViewCompat.replaceAccessibilityAction(viewPager,
+//                            new AccessibilityActionCompat(actionIdPageUp, null), null,
+//                            mActionPageBackward);
+//                }
+//            }
         }
 
         private void addCollectionInfo(AccessibilityNodeInfo info) {
