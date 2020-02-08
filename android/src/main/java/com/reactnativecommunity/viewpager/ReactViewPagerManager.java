@@ -52,6 +52,11 @@ public class ReactViewPagerManager extends ViewGroupManager<ReactViewPager> {
     viewPager.setOrientation(value.equals("vertical"));
   }
 
+  @ReactProp(name = "pageWidth", defaultFloat = 1.0f)
+  public void setPageWidth(ReactViewPager viewPager, float value) {
+    viewPager.setPageWidthToAdapter(value);
+  }
+
   @Override
   public boolean needsCustomLayoutForChildren() {
     return true;

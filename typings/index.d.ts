@@ -69,6 +69,11 @@ export interface ViewPagerProps extends ReactNative.ViewProps {
      */
     pageMargin?: number;
 
+    /**
+     * Specify width of each page. By default its 1.0f
+     */
+    pageWidth?: number;
+
     onMoveShouldSetResponderCapture?: (event: any) => boolean;
     
     /**

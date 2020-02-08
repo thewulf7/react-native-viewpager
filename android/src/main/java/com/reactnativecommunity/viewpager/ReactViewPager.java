@@ -32,6 +32,7 @@ public class ReactViewPager extends VerticalViewPager {
 
     private final List<View> mViews = new ArrayList<>();
     private boolean mIsViewPagerInIntentionallyInconsistentState = false;
+    private Float mPageWidth = null;
 
     void addView(View child, int index) {
       mViews.add(index, child);
@@ -73,6 +74,12 @@ public class ReactViewPager extends VerticalViewPager {
       return mViews.get(index);
     }
 
+    void setCustomPageWidth(float width) {
+      mPageWidth = width;
+      mIsViewPagerInIntentionallyInconsistentState = true;
+      notifyDataSetChanged();
+    }
+
     @Override
     public int getCount() {
       return mViews.size();
@@ -101,6 +108,11 @@ public class ReactViewPager extends VerticalViewPager {
     @Override
     public boolean isViewFromObject(View view, Object object) {
       return view == object;
+    }
+
+    @Override
+    public float getPageWidth(int position) {
+      return mPageWidth != null ? mPageWidth : super.getPageWidth(position);
     }
   }
 
@@ -250,5 +262,9 @@ public class ReactViewPager extends VerticalViewPager {
 
   public void removeAllViewsFromAdapter() {
     getAdapter().removeAllViewsFromAdapter(this);
+  }
+
+  public void setPageWidthToAdapter(float pageWidth) {
+    getAdapter().setCustomPageWidth(pageWidth);
   }
 }

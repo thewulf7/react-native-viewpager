@@ -86,6 +86,11 @@ export type ViewPagerProps = $ReadOnly<{|
   pageMargin?: ?number,
 
   /**
+   * Specify width of each page. By default its 1.0f
+   */
+  pageWidth?: ?number,
+
+  /**
    * Determines whether the keyboard gets dismissed in response to a drag.
    *   - 'none' (the default), drags do not dismiss the keyboard.
    *   - 'on-drag', the keyboard is dismissed when a drag begins.
